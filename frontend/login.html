@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Project Manager</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>📋 ProjectTrack</h1>
+                <p>Project Management System</p>
+            </div>
+
+            <div id="login-error" class="hidden error"></div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input 
+                        type="email" 
+                        name="email" 
+                        class="form-input" 
+                        placeholder="Enter your email"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input 
+                        type="password" 
+                        name="password" 
+                        class="form-input" 
+                        placeholder="Enter your password"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+                    Sign In
+                </button>
+            </form>
+
+            <div style="margin-top: 20px; text-align: center; color: var(--gray-500); font-size: 13px;">
+                <p><strong>Test Credentials:</strong></p>
+                <p>Email: vickyrag@gmail.com</p>
+                <p>Password: vicky123</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.querySelector('input[name="email"]').value;
+            const password = document.querySelector('input[name="password"]').value;
+            const errorDiv = document.getElementById('login-error');
+
+            try {
+                errorDiv.classList.add('hidden');
+                
+                const response = await api.login(email, password);
+                
+                // Try to fetch user info (this is optional - adjust based on your backend)
+                try {
+                    const users = await api.getUsers();
+                    const currentUser = users.find(u => u.email === email) || { 
+                        id: 1, 
+                        name: email.split('@')[0], 
+                        email: email 
+                    };
+                    authManager.saveUser(currentUser);
+                } catch (err) {
+                    // If user fetch fails, just use email
+                    authManager.saveUser({ id: 1, name: email.split('@')[0], email: email });
+                }
+
+                // Redirect to dashboard
+                window.location.href = 'index.html';
+            } catch (error) {
+                errorDiv.classList.remove('hidden');
+                errorDiv.textContent = error.message || 'Login failed. Please check your credentials.';
+            }
+        });
+    </script>
+</body>
+</html>

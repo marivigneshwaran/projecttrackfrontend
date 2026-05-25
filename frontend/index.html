@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - ProjectTrack</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-content">
+                <a href="index.html" class="navbar-brand">📋 ProjectTrack</a>
+                
+                <ul class="navbar-nav">
+                    <li><a href="index.html" class="nav-link active">Dashboard</a></li>
+                    <li><a href="customers.html" class="nav-link">Customers</a></li>
+                    <li><a href="projects.html" class="nav-link">Projects</a></li>
+                    <li><a href="tasks.html" class="nav-link">Tasks</a></li>
+                </ul>
+
+                <div class="navbar-actions">
+                    <div class="user-info" id="user-info">
+                        <div class="user-avatar" id="user-avatar">?</div>
+                        <div>
+                            <div style="font-weight: 500; font-size: 14px;" id="user-name">User</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" id="logout-btn">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="dashboard">
+        <div class="container">
+            <div class="page-header">
+                <div>
+                    <h1>Dashboard</h1>
+                    <p style="color: var(--gray-500); margin-top: 4px;">Welcome back! Here's your project overview.</p>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Customers</div>
+                    <div class="stat-value" id="stat-customers">0</div>
+                </div>
+                <div class="stat-card secondary">
+                    <div class="stat-label">Active Projects</div>
+                    <div class="stat-value" id="stat-projects">0</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="stat-label">Total Tasks</div>
+                    <div class="stat-value" id="stat-tasks">0</div>
+                </div>
+                <div class="stat-card danger">
+                    <div class="stat-label">Team Members</div>
+                    <div class="stat-value" id="stat-users">0</div>
+                </div>
+            </div>
+
+            <!-- Recent Projects -->
+            <div class="table-container" style="margin-bottom: 30px;">
+                <div class="table-header">
+                    <h2>Recent Projects</h2>
+                    <a href="projects.html" class="btn btn-primary btn-sm">View All Projects</a>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Project Name</th>
+                            <th>Client</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Progress</th>
+                            <th>Start Date</th>
+                            <th>Due Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-projects-table">
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 40px;">
+                                <div class="spinner"></div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Recent Tasks -->
+            <div class="table-container">
+                <div class="table-header">
+                    <h2>Recent Tasks</h2>
+                    <a href="tasks.html" class="btn btn-primary btn-sm">View All Tasks</a>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Task Name</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Estimated Hours</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-tasks-table">
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 40px;">
+                                <div class="spinner"></div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        async function loadDashboard() {
+            try {
+                // Load customers
+                const customers = await api.getCustomers();
+                document.getElementById('stat-customers').textContent = customers.length;
+
+                // Load projects
+                const projects = await api.getProjects();
+                document.getElementById('stat-projects').textContent = projects.filter(p => p.status === 'inprogress').length;
+
+                // Load tasks
+                const tasks = await api.getTasks();
+                document.getElementById('stat-tasks').textContent = tasks.length;
+
+                // Load users
+                const users = await api.getUsers();
+                document.getElementById('stat-users').textContent = users.length;
+
+                // Display recent projects
+                const recentProjects = projects.slice(0, 5);
+                const projectsTable = document.getElementById('recent-projects-table');
+                
+                if (recentProjects.length === 0) {
+                    projectsTable.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--gray-500);">No projects found</td></tr>';
+                } else {
+                    projectsTable.innerHTML = recentProjects.map(project => `
+                        <tr>
+                            <td><strong>${project.project_name}</strong></td>
+                            <td>${project.client_name || project.client}</td>
+                            <td>
+                                <span style="text-transform: capitalize;">
+                                    ${project.project_type === 'internal' ? '🏢' : '👥'} ${project.project_type}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="status-badge ${getStatusBadgeClass(project.status)}">
+                                    ${capitalizeFirst(project.status)}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${project.progress_percent}%"></div>
+                                </div>
+                                <small style="color: var(--gray-500);">${project.progress_percent}%</small>
+                            </td>
+                            <td>${formatDate(project.start_date)}</td>
+                            <td>${formatDate(project.due_date)}</td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Display recent tasks
+                const recentTasks = tasks.slice(0, 5);
+                const tasksTable = document.getElementById('recent-tasks-table');
+                
+                if (recentTasks.length === 0) {
+                    tasksTable.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--gray-500);">No tasks found</td></tr>';
+                } else {
+                    tasksTable.innerHTML = recentTasks.map(task => `
+                        <tr>
+                            <td><strong>${task.task_name}</strong></td>
+                            <td>
+                                <span class="status-badge ${getStatusBadgeClass(task.status)}">
+                                    ${capitalizeFirst(task.status)}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="status-badge ${getPriorityBadgeClass(task.priority)}">
+                                    ${capitalizeFirst(task.priority)}
+                                </span>
+                            </td>
+                            <td>${task.estimated_hrs || 0} hrs</td>
+                        </tr>
+                    `).join('');
+                }
+
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                showNotification('Failed to load dashboard data', 'error');
+            }
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>
